@@ -1,13 +1,24 @@
 # EVTX-Analyser
 
+You have the Windows Eventlogs (System.evtx) of a machine and you need to know when it was turned on? Then this program will make your life easy.
+
+### How To:
+
+Run the [Windows Executable](https://github.com/xHascox/EVTX-Analyser/blob/master/EXE/EVTX_Analyser.exe) or the [Script](https://github.com/xHascox/EVTX-Analyser/tree/master/Source).
+
+Select the SYSTEM Registry File (C:\Windows\System32\config\System) of the target Machine if you want to enrich the data with Power Settings (System Idle time until Standby) - this will rarely be working since Power Settings may be changed often and only the most recent one is stored in the Registry.
+
+Select the System.evtx Windows Eventlog file (C:\Windows\System32\winevt\Logs\System.evtx).
+
+Wait some time (10MB ~ 5min)
+
+The Resulting list will be displayed in the GUI and stored to a Excel compatible CSV file where the Script/Executable was run.
+
 ### This Program uses:
 
 * [python-evtx](https://github.com/williballenthin/python-evtx) Apache License 2.0
 * [python-registry](https://github.com/williballenthin/python-registry) Apache License 2.0
 
+### Tested Python Version:
 
-Dieses Programm liest die Laufzeiten eines Windows-Computers aus den Windows eventlog Dateien (C:\Windows\System32\winevt\Logs\System.evtx) aus. Dieses Daten kann man mit den Energiespar-Einstellungen des Computers anreichern, wenn man auch die Registry-Datei (C:\Windows\System32\config\System) angibt. Dies muss man machen bevor man "Select System.evtx" drückt. Das Anreichern nützt aber oft nichts, da die Einstellungen zum Teil oft geändert werden und nur die aktuellsten Einstellungne ausgelesen werden können.
-
-Das Programm gibt eine Liste der Laufzeiten des Computers direkt im Fenster (GUI) aus, wie auch als Excel Datei im Ordner im dem das Programm ausgeführt wurde.
-
-Zu Debug Zwecken kann man das Programm auch per Konsole mit "EVTX_Analyser.exe > debug.txt" ausführen und erhält den Konsolen-Output in der debug.txt Datei.
+* 3.5
