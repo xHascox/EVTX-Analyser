@@ -1,5 +1,3 @@
-#Code: Marco (Cyber-RS)
-
 #pip install python-dateutil
 #pip install python-registery
 #pip install python-evtx
@@ -16,7 +14,7 @@ import xml.etree.ElementTree as ET
 import itertools
 from dateutil import tz
 from datetime import datetime
-
+import pytz
 
 import os
 from tkinter import *
@@ -73,9 +71,8 @@ reasons = {
     }
 
 #EventIDs of Interest
-evids = {
-        #-1: "Unerwartet heruntergefahren",
-        -2: "Letzter Log Eintrag",
+stdevids = {
+        -2: "Letzter Log Eintrag im System Log. Spätere Aktivitäten sind möglich.",
         None: "None",
         1:"time set",
         12:"Start",
@@ -84,6 +81,13 @@ evids = {
         42:"In Standbymodus versetzt",
         107:"Aus Standbymodus aufgeweckt",
         6008:"Unerwartet heruntergefahren"
+
+}
+
+evids = {
+        #-1: "Unerwartet heruntergefahren",
+        -2: "Letzter Log Eintrag im System Log. Spätere Aktivitäten sind möglich.",
+        None: "None",
     }
 
 #Defines Class Entry - every Event will be considered an Entry with attributes self.eventid ...
@@ -125,7 +129,14 @@ def analyse_xml(o, evids):
         }
     
     global reasons
-    
+    global stdevidsc
+    if stdevidsc.get():
+        print(stdevidsc)
+        evids.update(stdevids)
+    '''add custom evids to evids'''
+    cevid = customlabel.get("1.0", "end").split("\n")
+    cevid = {int(each[:each.find("=")]):each[each.find("=")+1:] for each in cevid if each != ""}
+    evids.update(cevid)
 
     dataids = {str(each):v for each,v in dataids.items()}
     reasons = {str(each):v for each,v in reasons.items()}
@@ -175,7 +186,10 @@ def analyse_xml(o, evids):
                         print("___", ds)
                         rt = str(ds[34:44])[2:-1]+" "+str(ds[8:16])[2:-1]
                         ltz = tz.gettz("Europe/Zurich")
-                        e.data["RealTime"]=datetime.strptime(rt, "%d.%m.%Y %H:%M:%S").replace(tzinfo=ltz).astimezone(ltz)
+                        ltz = pytz.timezone("Europe/Zurich")
+                        tt = str(datetime.strptime(rt, "%d.%m.%Y %H:%M:%S"))
+                        e.data["RealTime"]=datetime(int(tt[:4]), int(tt[5:7]), int(tt[8:10]), int(tt[11:13]), int(tt[14:16]), int(tt[17:19]), tzinfo=ltz).astimezone(ltz)
+                        #.replace(tzinfo=ltz).localize().astimezone(ltz)
                         
     
                 else:
@@ -395,7 +409,7 @@ def analyse2file(loe, o):
             txt = txt + (cuttimestr(str(e.localtime), "S") +"\t"+ evids[e.eventid] +"\t"+e.data.get("TFE", "")+"\t"+"\n")
         else:
             txt = txt + (cuttimestr(str(e.localtime), "S") +"\t"+ evids[e.eventid] +"\t"+""+"\t"+"\n")
-    helplabel.config(state="normal", height=150)
+    helplabel.config(state="normal")
     helplabel.delete(1.0, END)
     helplabel.insert(END, txt)
     helplabel.config(state="disabled")
@@ -623,51 +637,76 @@ class Window(Frame):
         
         Frame.__init__(self, master)
         self.master = master
-        self.pack(fill=BOTH, expand=1)
+        self.place(fill=BOTH, expand=1)
 
 
 
 # Windows Registery Row
 winregrow=Frame(root)
-winregrow.pack(side=TOP, fill=X, padx=5, pady=5)
-# Registery File
-'''
-regbutton = Button(winregrow, text="Select NTUSER.DAT", command=buttonreg_nt)
-regbutton.pack(side=LEFT, padx=10, pady=10)
-'''
+winregrow.place(relx=0.6, relheight=0.2, relwidth=0.2, anchor=NW, rely=0)
 # Registery File
 regbuttonsys = Button(winregrow, text="Select SYSTEM", command=buttonreg_sys)
-regbuttonsys.pack(side=LEFT, padx=10, pady=10)
+regbuttonsys.place(x=10, y=30)
 
 # Windows Event Log Row
 winlogrow=Frame(root)
-winlogrow.pack(side=TOP, fill=X, padx=5, pady=5)
+winlogrow.place(relheight=0.2, relwidth=0.2, anchor=NW, relx=0.8, rely=0)
 # Evtx 2 XML
 evtxbutton = Button(winlogrow, text="Select System.evtx", command=buttonevtx)
-evtxbutton.pack(side=LEFT, padx=10, pady=10)
+evtxbutton.place(x=10, y=30)
+
+#Standard EventIDs?:
+checkbtnrow = Frame(root)
+checkbtnrow.place(relheight=0.1, relwidth=0.4, rely=0.1, relx=0.6, anchor=NW)
+stdevidsc = IntVar()
+stdevidsc.set(1)
+checkbtn = Checkbutton(checkbtnrow, text="Standard EventIDs (PC Laufzeiten)", variable=stdevidsc)
+checkbtn.place(x=10, y=10, relwidth=1, relheight=0.4)
 
 #Status Text Label
 statusrow = Frame(root)
-statusrow.pack(side=TOP, fill=X, padx=5, pady=5)
+statusrow.place(relheight=0.2, relwidth=0.4, rely=0.3, relx=0.6, anchor=NW)
 statustext = StringVar()
 statustext.set("Status: idle")
 statuslabel = Label(statusrow, textvariable=statustext, font=("Helvetica", 12), anchor=W, justify=LEFT, width=30)
-statuslabel.pack(side=LEFT, padx=10, pady=10)
+statuslabel.place(x=10, y=10, relwidth=1, relheight=0.4)
+
+
+
+
+#Text Benutzerdef EventId:
+bdefrow = Frame(root)
+bdefrow.place(relheight=0.07, relwidth=0.6, rely=0, relx=0, anchor=NW)
+bdeftext = StringVar()
+bdeftext.set("Benutzerdefinierte EventIDs:")
+bdeflabel = Label(bdefrow, textvariable=bdeftext, font=("Helvetica", 12), anchor=W, justify=LEFT, width=30)
+bdeflabel.place(x=10, y=10, relwidth=1, relheight=1)
+
+#CUSTOM EVENT ID
+customrow = Frame(root)
+customrow.place(relx=0, rely=0.07, relwidth=0.6, relheight=0.43)
+customtext = StringVar()
+customtext.set("6008=Unerwartet heruntergefahren\n12=Start\n")
+#customlabel = Label(customrow, textvariable=customtext, font=("Helvetica", 12), anchor=W, justify=LEFT)
+customlabel = scrolledtext.ScrolledText(customrow, undo=True, height=17)
+customlabel.insert(END, customtext.get())
+customlabel.config(state="normal")
+customlabel.place(x=10, y=10, relwidth=0.95)
 
 #Help Text Label
 helprow = Frame(root)
-helprow.pack(side=TOP, fill=X, padx=5, pady=5)
+helprow.place(rely=0.4, relx=0, relheight=0.6, relwidth=1)
 helptext = StringVar()
 helptext.set("File Locations:\n\nC:\\Windows\\System32\\winevt\\Logs\\System.evtx\nC:\\Windows\\System32\\config\\System")
 #helplabel = Label(helprow, textvariable=helptext, font=("Helvetica", 12), anchor=W, justify=LEFT)
-helplabel = scrolledtext.ScrolledText(helprow, undo=True)
+helplabel = scrolledtext.ScrolledText(helprow, undo=True, height=30)
 helplabel.insert(END, helptext.get())
 helplabel.config(state="disabled")
-helplabel.pack(side=LEFT, padx=10, pady=10, expand=1, fill=BOTH)
+helplabel.place(x=10, y=10, relwidth=0.95)
 
 #GUI Window Title and Size:
 root.wm_title("Windows Event Log Analyser")
-root.geometry(str(int(500))+"x"+str(int(500)))
+root.geometry(str(int(800))+"x"+str(int(900)))
 
 #Make the left-Labels the same size:
 root.update()
