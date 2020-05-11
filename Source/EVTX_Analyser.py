@@ -1,5 +1,3 @@
-#Code: Marco (Cyber-RS)
-
 #pip install python-dateutil
 #pip install python-registery
 #pip install python-evtx
